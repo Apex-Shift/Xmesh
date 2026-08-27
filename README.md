@@ -1,6 +1,6 @@
 # XMESH – Expert Meshtastic MQTT Monitor
 
-**Version 2.0.0** · Production-ready · Tactical dark UI · AES-128-CTR · Protobuf
+**Version 2.1.0** · Production-ready · Tactical dark UI · AES-128-CTR · Protobuf
 
 XMESH is a high-performance desktop client that connects to any Meshtastic MQTT broker, decrypts live mesh traffic, maintains a real-time node database, displays chat and GPS telemetry, and lets you broadcast text messages back onto the network.
 
@@ -138,7 +138,7 @@ MIT License – see [LICENSE](LICENSE).
 
 ---
 
-## Changelog (v2.0.0 – Expert Edition)
+## Changelog (v2.1.0 – Expert Edition)
 
 - Unified and corrected AES-CTR key handling (official default key)
 - Full TLS support + robust reconnect / status signals
