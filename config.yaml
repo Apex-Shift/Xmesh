@@ -1,0 +1,10 @@
+mqtt:
+  broker: "mqtt.meshtastic.org"
+  port: 1883
+  username: "meshdev"
+  password: "large4cats"
+  use_tls: false
+  topic: "msh/+/2/c/LongFast/#"
+
+mesh:
+  channel_key_base64: "AQ=="
