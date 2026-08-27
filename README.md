@@ -1,88 +1,152 @@
-# XMESH  
+# XMESH – Expert Meshtastic MQTT Monitor
 
-> A professional, high-performance desktop monitoring and control client built with Python, PySide6, and MQTT for interacting with the global decentralized Meshtastic mesh network.
+**Version 2.0.0** · Production-ready · Tactical dark UI · AES-128-CTR · Protobuf
 
----
-
-## 🚀 Overview
-
-**XMESH** is engineered as a tactical operations center for Meshtastic networks. It hooks directly into MQTT message brokers to intercept, decode, encrypt, and broadcast network packets across regional meshes in real-time. Whether you are monitoring telemetry from solar relays, tracking node hardware distributions, or sending encrypted broadcasts across public/private channels, XMESH provides a responsive, dark-themed tactical UI.
+XMESH is a high-performance desktop client that connects to any Meshtastic MQTT broker, decrypts live mesh traffic, maintains a real-time node database, displays chat and GPS telemetry, and lets you broadcast text messages back onto the network.
 
 ---
 
-## 🛠️ Architecture & Core Components
+## Features
 
-```text
-Xmesh/
+| Area | Capability |
+|------|------------|
+| **Transport** | `paho-mqtt` with automatic reconnect, TLS support, QoS 0 wildcard subscriptions |
+| **Crypto** | AES-128-CTR with the official Meshtastic IV construction (`packet_id \|\| from_node`) |
+| **Protocol** | Full decode of `TEXT_MESSAGE_APP`, `NODEINFO_APP`, `POSITION_APP` via official `meshtastic` protobufs |
+| **UI** | PySide6 tactical dark theme, live stats, node table, coloured chat with timestamps, position telemetry table |
+| **Architecture** | Clean separation (core / models / ui), Qt signal bus, type-hinted code, structured logging |
+| **Packaging** | `pyproject.toml`, MIT license, pinned dependencies |
+
+---
+
+## Project Layout
+
+```
+Xmesh-expert/
 ├── core/
-│   ├── __init__.py
-│   ├── mqtt_client.py        # Asynchronous MQTT connection engine & packet publisher
-│   ├── protobuf_decoder.py   # AES-128-CTR crypto pipeline & Protobuf parser
-│   └── signals.py            # PySide6 cross-thread event mapping
+│   ├── mqtt_client.py      # MQTT client + reconnect + TLS
+│   ├── protobuf_decoder.py # AES-CTR + ServiceEnvelope / MeshPacket decode
+│   └── signals.py          # Qt signal bus
+├── models/
+│   └── node.py             # Dataclass Node model
 ├── ui/
-│   ├── widgets/
-│   │   ├── chat.py           # Real-time encrypted text broadcast & chat feed
-│   │   ├── map_view.py       # GPS position & telemetry visualization interface
-│   │   └── node_list.py      # Dynamic active node database (Node DB)
-│   ├── styles/
-│   │   └── theme.qss         # Custom high-contrast tactical dark theme
-│   └── main_window.py        # Central layout container & telemetry counters
-├── config.yaml               # Broker configuration and channel security keys
-├── requirements.txt          # Python package dependencies
-└── main.py                   # Application entry point
+│   ├── main_window.py      # Main window + stats + navigation
+│   ├── styles/theme.qss    # High-contrast tactical theme
+│   └── widgets/
+│       ├── chat.py         # Live chat + send
+│       ├── node_list.py    # Node DB table
+│       └── map_view.py     # Position telemetry table
+├── config.yaml             # Broker + channel key
+├── main.py                 # Entry point
+├── requirements.txt
+├── pyproject.toml
+├── LICENSE
+└── README.md
 ```
 
 ---
 
-## ⚙️ Technical Specifications
+## Requirements
 
-* **Language**: Python 3.12+
-* **GUI Framework**: PySide6 (Qt for Python)
-* **Transport Layer**: `paho-mqtt` (MQTT client implementation with QoS and topic filtering)
-* **Cryptography**: `cryptography` library utilizing AES-128-CTR mode with dynamically generated IVs (packet ID + sender node mapping)
-* **Protocol Serialization**: Google Protocol Buffers via official `meshtastic` packages (`mqtt_pb2`, `mesh_pb2`, `portnums_pb2`)
+- **Python 3.10+** (3.12 recommended)
+- OS: Linux / Windows / macOS
 
 ---
 
-## 📦 Installation & Setup
+## Installation
 
-### 1. Clone the Repository
 ```bash
-git clone https://github.com/apex-shift/Xmesh.git
-cd Xmesh
-```
+# 1. Extract / clone
+cd Xmesh-expert
 
-### 2. Install Dependencies
-Ensure you have Python installed, then run:
-```bash
+# 2. (Optional but recommended) create a virtual environment
+python -m venv .venv
+source .venv/bin/activate          # Linux / macOS
+# .venv\Scripts\activate           # Windows
+
+# 3. Install dependencies
 pip install -r requirements.txt
 ```
 
-### 3. Configure Parameters (config.yaml)
-Create or update your `config.yaml` file in the root project directory:
+---
+
+## Configuration
+
+Edit `config.yaml`:
+
 ```yaml
 mqtt:
   broker: "mqtt.meshtastic.org"
-  port: 8883
+  port: 1883                  # 8883 for TLS
   username: "meshdev"
-  password: "large4ree"
-  use_tls: true
+  password: "large4cats"
+  use_tls: false
   topic: "msh/+/2/c/LongFast/#"
 
 mesh:
-  channel_key_base64: "AQ=="  # Default standard LongFast channel key
+  channel_key_base64: "AQ=="  # Default public LongFast key
 ```
 
-### 4. Launch the Application
-Always run the application from the project root directory:
+> **Private channel** – replace `channel_key_base64` with your 16-byte PSK encoded in Base64.
+
+---
+
+## Launch
+
+Always run from the project root so that relative paths resolve correctly:
+
 ```bash
 python main.py
 ```
 
 ---
 
-## 🕹️ Operational Guidelines
+## Operational Notes
 
-* **Node Database (Node DB)**: Upon successful connection to the MQTT broker, the system automatically subscribes to regional wildcards. Incoming telemetry and node info frames (`NODEINFO_APP`) dynamically populate active nodes with hardware details (`HELTEC_V3`, `RAK4631`, etc.).
-* **Live Chat & Broadcasting**: Switch to the Live Chat tab to view intercepted text streams. Type your broadcast message into the terminal input field and hit Enter or click Send. The client will package your text into a Data structure, encrypt it using AES-128-CTR, wrap it inside a ServiceEnvelope, and publish it to the mesh network.
-* **Telemetry & Mapping**: Intercepted GPS packets (`POSITION_APP`) track global node coordinates in real-time.
+- **Node DB** – Every packet that carries a node identity populates or refreshes the table (short name, long name, hardware model, last-seen timestamp).
+- **Live Chat** – Incoming `TEXT_MESSAGE_APP` packets appear with timestamps. Type a message and press **Enter** or click **SEND** to encrypt and publish a broadcast.
+- **Telemetry** – `POSITION_APP` packets feed the position table (lat / lon / altitude). The data model is ready for a future map widget (folium, pyqt-leaflet, etc.).
+- **Connection status** – The top-right card and the status bar reflect online / offline state in real time.
+- **TLS** – Set `use_tls: true` and `port: 8883` for encrypted transport to the public broker or your own Mosquitto instance.
+
+---
+
+## Technical Stack
+
+| Layer | Technology |
+|-------|------------|
+| Language | Python 3.10+ |
+| GUI | PySide6 (Qt 6) |
+| MQTT | paho-mqtt |
+| Crypto | cryptography (AES-128-CTR) |
+| Serialization | meshtastic protobufs (`mesh_pb2`, `mqtt_pb2`, `portnums_pb2`) |
+| Config | PyYAML |
+
+---
+
+## Security Notes
+
+- The default key `"AQ=="` is the **public** Meshtastic LongFast channel. Anyone can decrypt traffic on that channel.
+- For private deployments generate a random 16-byte key, Base64-encode it, and distribute it only to authorised nodes.
+- Credentials in `config.yaml` should never be committed to public repositories when using private brokers.
+
+---
+
+## License
+
+MIT License – see [LICENSE](LICENSE).
+
+---
+
+## Changelog (v2.0.0 – Expert Edition)
+
+- Unified and corrected AES-CTR key handling (official default key)
+- Full TLS support + robust reconnect / status signals
+- Professional sidebar navigation (QListWidget)
+- Live connection / node / message counters
+- Timestamps and colour coding in chat
+- Proper Node dataclass with last-seen tracking
+- Position telemetry table (map-ready)
+- Type hints, docstrings, structured logging throughout
+- `pyproject.toml`, `.gitignore`, MIT license
+- Cleaner configuration and README

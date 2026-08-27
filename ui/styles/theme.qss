@@ -1,3 +1,7 @@
+/* ============================================================
+   XMESH – Tactical high-contrast dark theme
+   ============================================================ */
+
 QMainWindow {
     background-color: #0D0F12;
 }
@@ -5,24 +9,31 @@ QMainWindow {
 QWidget {
     background-color: #13171C;
     color: #C5D0DE;
-    font-family: "Consolas", "Segoe UI", monospace;
+    font-family: "Consolas", "Cascadia Code", "Segoe UI", monospace;
     font-size: 13px;
 }
 
-/* Sidebar navigation */
+/* ---- Sidebar ---- */
 QListWidget#Sidebar {
     background-color: #090B0E;
     border: none;
     border-right: 1px solid #1F2630;
     outline: none;
+    padding-top: 12px;
 }
 
 QListWidget#Sidebar::item {
-    height: 45px;
-    padding-left: 15px;
+    height: 48px;
+    padding-left: 18px;
     color: #7A8B9E;
     font-weight: bold;
     border-left: 3px solid transparent;
+    margin: 2px 0;
+}
+
+QListWidget#Sidebar::item:hover {
+    background-color: #12161C;
+    color: #A8B8C8;
 }
 
 QListWidget#Sidebar::item:selected {
@@ -31,12 +42,18 @@ QListWidget#Sidebar::item:selected {
     border-left: 3px solid #00FF66;
 }
 
-/* Tables styling */
+/* ---- Tables ---- */
 QTableWidget {
     background-color: #101419;
     border: 1px solid #1F2630;
     gridline-color: #1A222C;
     border-radius: 6px;
+    alternate-background-color: #0E1218;
+}
+
+QTableWidget::item:selected {
+    background-color: #1A2A22;
+    color: #00FF66;
 }
 
 QHeaderView::section {
@@ -47,18 +64,21 @@ QHeaderView::section {
     border-bottom: 2px solid #00FF66;
     font-weight: bold;
     text-transform: uppercase;
+    font-size: 11px;
 }
 
-/* Inputs & Buttons */
+/* ---- Inputs & Buttons ---- */
 QTextEdit, QLineEdit {
     background-color: #0A0C0E;
     border: 1px solid #222C38;
     border-radius: 4px;
-    color: #00FF66;
+    color: #E8EEF5;
     padding: 8px;
+    selection-background-color: #00FF66;
+    selection-color: #050B07;
 }
 
-QLineEdit:focus {
+QLineEdit:focus, QTextEdit:focus {
     border: 1px solid #00FF66;
 }
 
@@ -75,9 +95,42 @@ QPushButton:hover {
     background-color: #33FF85;
 }
 
-/* Stat Cards */
+QPushButton:pressed {
+    background-color: #00CC52;
+}
+
+/* ---- Stat Cards ---- */
 QFrame#StatCard {
     background-color: #161C24;
     border: 1px solid #222C38;
     border-radius: 6px;
+}
+
+/* ---- Status bar ---- */
+QStatusBar {
+    background-color: #090B0E;
+    color: #7A8B9E;
+    border-top: 1px solid #1F2630;
+}
+
+QStatusBar::item {
+    border: none;
+}
+
+/* ---- Scrollbars ---- */
+QScrollBar:vertical {
+    background: #0D0F12;
+    width: 10px;
+    margin: 0;
+}
+QScrollBar::handle:vertical {
+    background: #2A3440;
+    border-radius: 4px;
+    min-height: 30px;
+}
+QScrollBar::handle:vertical:hover {
+    background: #3A4A5A;
+}
+QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {
+    height: 0;
 }

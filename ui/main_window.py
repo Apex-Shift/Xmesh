@@ -1,58 +1,81 @@
+"""Main application window – tactical dark UI for Xmesh."""
+
+from __future__ import annotations
+
 import logging
-from PySide6.QtWidgets import QMainWindow, QWidget, QHBoxLayout, QVBoxLayout, QStackedWidget, QLabel
+
 from PySide6.QtCore import Qt
-from ui.widgets.node_list import NodeListWidget
+from PySide6.QtWidgets import (
+    QFrame,
+    QHBoxLayout,
+    QLabel,
+    QListWidget,
+    QListWidgetItem,
+    QMainWindow,
+    QStatusBar,
+    QStackedWidget,
+    QVBoxLayout,
+    QWidget,
+)
+
 from ui.widgets.chat import ChatWidget
- 
 from ui.widgets.map_view import MapWidget
+from ui.widgets.node_list import NodeListWidget
 
 logger = logging.getLogger(__name__)
 
+
 class XmeshMainWindow(QMainWindow):
-    def __init__(self, signals=None, parent=None):
+    def __init__(self, signals=None, parent=None) -> None:
         super().__init__(parent)
         self.signals = signals
-        self.active_nodes = set()
+        self.active_nodes: set[str] = set()
         self.message_count = 0
 
-        self.setWindowTitle("XMESH")
-        self.resize(1100, 650)
+        self.setWindowTitle("XMESH – Expert Meshtastic Monitor")
+        self.resize(1200, 720)
+        self.setMinimumSize(900, 560)
 
-        # Central Layout
-        central_widget = QWidget()
-        self.setCentralWidget(central_widget)
-        main_layout = QHBoxLayout(central_widget)
+        self._build_ui()
+        self._wire_signals()
 
-        # Sidebar Navigation
-        sidebar = QWidget()
-        sidebar.setFixedWidth(180)
-        sidebar_layout = QVBoxLayout(sidebar)
-        
-        self.btn_nodedb = QLabel("📡  NODE DB")
-        self.btn_chat = QLabel("💬  LIVE CHAT")
-        self.btn_telemetry = QLabel("🗺️  TELEMETRY")
-        
-        for btn in [self.btn_nodedb, self.btn_chat, self.btn_telemetry]:
-            btn.setCursor(Qt.PointingHandCursor)
-            sidebar_layout.addWidget(btn)
-        
-        sidebar_layout.addStretch()
-        main_layout.addWidget(sidebar)
+    # ------------------------------------------------------------------ #
+    def _build_ui(self) -> None:
+        central = QWidget()
+        self.setCentralWidget(central)
+        root = QHBoxLayout(central)
+        root.setContentsMargins(0, 0, 0, 0)
+        root.setSpacing(0)
 
-        # Right Panel
-        right_panel = QVBoxLayout()
+        # ----- Sidebar -----
+        self.sidebar = QListWidget()
+        self.sidebar.setObjectName("Sidebar")
+        self.sidebar.setFixedWidth(190)
+        for label in ("📡  NODE DB", "💬  LIVE CHAT", "🗺️  TELEMETRY"):
+            item = QListWidgetItem(label)
+            item.setTextAlignment(Qt.AlignVCenter)
+            self.sidebar.addItem(item)
+        self.sidebar.setCurrentRow(0)
+        self.sidebar.currentRowChanged.connect(self._on_nav)
+        root.addWidget(self.sidebar)
 
-        # Stats Header
-        stats_layout = QHBoxLayout()
-        self.lbl_nodes_cnt = QLabel("ACTIVE NODES\n0")
-        self.lbl_msg_cnt = QLabel("MESSAGES CAPTURED\n0")
-        stats_layout.addWidget(self.lbl_nodes_cnt)
-        stats_layout.addWidget(self.lbl_msg_cnt)
-        stats_layout.addStretch()
-        
-        right_panel.addLayout(stats_layout)
+        # ----- Right panel -----
+        right = QVBoxLayout()
+        right.setContentsMargins(12, 12, 12, 12)
+        right.setSpacing(10)
 
-        # Stacked Screens
+        # Stats cards
+        stats = QHBoxLayout()
+        self.lbl_nodes = self._make_stat_card("ACTIVE NODES", "0")
+        self.lbl_msgs = self._make_stat_card("MESSAGES CAPTURED", "0")
+        self.lbl_status = self._make_stat_card("CONNECTION", "DISCONNECTED")
+        stats.addWidget(self.lbl_nodes)
+        stats.addWidget(self.lbl_msgs)
+        stats.addWidget(self.lbl_status)
+        stats.addStretch()
+        right.addLayout(stats)
+
+        # Stacked pages
         self.stack = QStackedWidget()
         self.node_widget = NodeListWidget()
         self.chat_widget = ChatWidget(signals=self.signals)
@@ -61,27 +84,72 @@ class XmeshMainWindow(QMainWindow):
         self.stack.addWidget(self.node_widget)
         self.stack.addWidget(self.chat_widget)
         self.stack.addWidget(self.map_widget)
+        right.addWidget(self.stack)
 
-        right_panel.addWidget(self.stack)
-        main_layout.addLayout(right_panel)
+        root.addLayout(right, stretch=1)
 
-        # Navigation Click Handlers
-        self.btn_nodedb.mousePressEvent = lambda e: self.stack.setCurrentIndex(0)
-        self.btn_chat.mousePressEvent = lambda e: self.stack.setCurrentIndex(1)
-        self.btn_telemetry.mousePressEvent = lambda e: self.stack.setCurrentIndex(2)
+        # Status bar
+        self.status = QStatusBar()
+        self.setStatusBar(self.status)
+        self.status.showMessage("Ready – waiting for MQTT connection…")
 
-        # Connect Signals
-        if self.signals:
-            self.signals.node_updated.connect(self.on_node_updated)
-            self.signals.message_received.connect(self.on_message_received)
+    def _make_stat_card(self, title: str, value: str) -> QFrame:
+        frame = QFrame()
+        frame.setObjectName("StatCard")
+        frame.setFixedHeight(64)
+        frame.setMinimumWidth(160)
+        lay = QVBoxLayout(frame)
+        lay.setContentsMargins(12, 6, 12, 6)
+        lay.setSpacing(2)
 
-    def on_node_updated(self, packet):
+        t = QLabel(title)
+        t.setStyleSheet("color: #5A6A7A; font-size: 10px; font-weight: bold;")
+        v = QLabel(value)
+        v.setObjectName("StatValue")
+        v.setStyleSheet("color: #00FF66; font-size: 18px; font-weight: bold;")
+        lay.addWidget(t)
+        lay.addWidget(v)
+        frame.value_label = v  # type: ignore[attr-defined]
+        return frame
+
+    # ------------------------------------------------------------------ #
+    def _wire_signals(self) -> None:
+        if not self.signals:
+            return
+        self.signals.node_updated.connect(self.on_node_updated)
+        self.signals.message_received.connect(self.on_message_received)
+        self.signals.position_updated.connect(self.on_position_updated)
+        self.signals.connection_status.connect(self.on_connection_status)
+
+    def _on_nav(self, index: int) -> None:
+        if 0 <= index < self.stack.count():
+            self.stack.setCurrentIndex(index)
+
+    # ------------------------------------------------------------------ #
+    # Slots
+    # ------------------------------------------------------------------ #
+    def on_node_updated(self, packet: dict) -> None:
         node_id = packet.get("from_node")
         if node_id and node_id != "UNKNOWN":
             self.active_nodes.add(node_id)
-            self.lbl_nodes_cnt.setText(f"ACTIVE NODES\n{len(self.active_nodes)}")
+            self.lbl_nodes.value_label.setText(str(len(self.active_nodes)))
             self.node_widget.update_node(packet)
 
-    def on_message_received(self, packet):
+    def on_message_received(self, packet: dict) -> None:
         self.message_count += 1
-        self.lbl_msg_cnt.setText(f"MESSAGES CAPTURED\n{self.message_count}")
+        self.lbl_msgs.value_label.setText(str(self.message_count))
+        # ChatWidget already listens to the same signal
+
+    def on_position_updated(self, packet: dict) -> None:
+        self.map_widget.update_position(packet)
+        # Also keep the node DB fresh
+        self.on_node_updated(packet)
+
+    def on_connection_status(self, connected: bool, message: str) -> None:
+        colour = "#00FF66" if connected else "#FF5555"
+        text = "ONLINE" if connected else "OFFLINE"
+        self.lbl_status.value_label.setText(text)
+        self.lbl_status.value_label.setStyleSheet(
+            f"color: {colour}; font-size: 18px; font-weight: bold;"
+        )
+        self.status.showMessage(message)

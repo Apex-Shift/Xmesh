@@ -1,10 +1,19 @@
+# ============================================================
+# XMESH Configuration
+# ============================================================
+
 mqtt:
+  # Public Meshtastic MQTT broker (change for private deployments)
   broker: "mqtt.meshtastic.org"
+  # 1883 = plain, 8883 = TLS
   port: 1883
   username: "meshdev"
   password: "large4cats"
   use_tls: false
+  # Wildcard subscription – captures all regions / channels matching LongFast
   topic: "msh/+/2/c/LongFast/#"
 
 mesh:
+  # Base64 channel key. "AQ==" is the public default LongFast key.
+  # Replace with your private PSK (16 bytes base64) for encrypted private channels.
   channel_key_base64: "AQ=="
