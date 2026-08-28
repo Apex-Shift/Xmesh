@@ -1,7 +1,5 @@
 #!/usr/bin/env python3
-"""XMESH – Expert Meshtastic MQTT Monitor.
-
-Entry point. Run from the project root:
+"""XMESH – Expert Meshtastic MQTT Monitor v2.2
 
     python main.py
 """
@@ -45,9 +43,8 @@ def apply_stylesheet(app: QApplication) -> None:
     ):
         if candidate.exists():
             app.setStyleSheet(candidate.read_text(encoding="utf-8"))
-            logger.debug("Stylesheet applied: %s", candidate)
             return
-    logger.warning("No theme.qss found – running with default Qt style")
+    logger.warning("No theme.qss found")
 
 
 def main() -> int:
@@ -64,20 +61,27 @@ def main() -> int:
 
     broker = mqtt_cfg.get("broker") or "mqtt.meshtastic.org"
     port = int(mqtt_cfg.get("port") or 1883)
-    topic = mqtt_cfg.get("topic") or "msh/+/2/c/LongFast/#"
     username = mqtt_cfg.get("username") or "meshdev"
     password = mqtt_cfg.get("password") or "large4cats"
     use_tls = bool(mqtt_cfg.get("use_tls", False))
+
+    topics = mqtt_cfg.get("topics")
+    if not topics:
+        single = mqtt_cfg.get("topic") or "msh/+/2/c/LongFast/#"
+        topics = [single]
+
     channel_key = mesh_cfg.get("channel_key_base64") or "AQ=="
+    extra_keys = mesh_cfg.get("extra_keys_base64") or []
 
     mqtt_client = MeshtasticMQTTClient(
         broker=broker,
         port=port,
-        topic=topic,
+        topics=topics,
         username=username,
         password=password,
         use_tls=use_tls,
         channel_key=channel_key,
+        extra_keys=extra_keys if isinstance(extra_keys, list) else [],
         signals=signals,
     )
     mqtt_client.connect()

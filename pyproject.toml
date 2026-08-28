@@ -4,13 +4,13 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "xmesh"
-version = "2.0.0"
-description = "Expert-grade Meshtastic MQTT monitor with tactical dark UI"
+version = "2.2.0"
+description = "Expert-grade Meshtastic MQTT monitor with interactive map, CSV export and multi-channel"
 readme = "README.md"
 requires-python = ">=3.10"
 license = { text = "MIT" }
 authors = [{ name = "Xmesh Contributors" }]
-keywords = ["meshtastic", "mqtt", "lora", "mesh", "pyside6"]
+keywords = ["meshtastic", "mqtt", "lora", "mesh", "pyside6", "folium"]
 dependencies = [
     "paho-mqtt>=1.6.1,<3.0",
     "PyYAML>=6.0",
@@ -18,6 +18,7 @@ dependencies = [
     "cryptography>=41.0.0",
     "PySide6>=6.5.0",
     "meshtastic>=2.3.0",
+    "folium>=0.15.0",
 ]
 
 [project.scripts]

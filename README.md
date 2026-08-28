@@ -1,155 +1,84 @@
-# XMESH – Expert Meshtastic MQTT Monitor
+# XMESH  
 
-**Version 2.1.0** · Production-ready · Tactical dark UI · AES-128-CTR · Protobuf
+**Version 2.2** · SNR/RSSI · Device telemetry · Search · Logs · Interactive map · CSV
 
-XMESH is a high-performance desktop client that connects to any Meshtastic MQTT broker, decrypts live mesh traffic, maintains a real-time node database, displays chat and GPS telemetry, and lets you broadcast text messages back onto the network.
+Desktop client that connects to any Meshtastic MQTT broker, decrypts live traffic, tracks nodes with RF metrics, shows chat & GPS, opens a Leaflet map, and exports CSV.
 
 ---
-[![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
-[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
-[![PySide6](https://img.shields.io/badge/GUI-PySide6-orange.svg)](https://wiki.qt.io/Qt_for_Python)
 
-## Features
+## What's new in v2.2
+
+- **SNR / RSSI / hops** extracted from every MeshPacket and shown in Node DB + chat
+- **Device telemetry** (`TELEMETRY_APP`) → battery % / voltage on nodes
+- **Search / filter** on Node DB and Live Chat
+- **Context menu** on nodes → copy ID, coordinates, display name
+- **Logs tab** with colour-coded INFO / WARN / ERROR (also `Ctrl+L`)
+- **Packet counter** in the stats bar
+- Clear chat / clear filter buttons
+- Richer CSV exports (SNR, RSSI, battery, voltage)
+
+---
+
+## Features overview
 
 | Area | Capability |
 |------|------------|
-| **Transport** | `paho-mqtt` with automatic reconnect, TLS support, QoS 0 wildcard subscriptions |
-| **Crypto** | AES-128-CTR with the official Meshtastic IV construction (`packet_id \|\| from_node`) |
-| **Protocol** | Full decode of `TEXT_MESSAGE_APP`, `NODEINFO_APP`, `POSITION_APP` via official `meshtastic` protobufs |
-| **UI** | PySide6 tactical dark theme, live stats, node table, coloured chat with timestamps, position telemetry table |
-| **Architecture** | Clean separation (core / models / ui), Qt signal bus, type-hinted code, structured logging |
-| **Packaging** | `pyproject.toml`, MIT license, pinned dependencies |
+| Transport | paho-mqtt · auto-reconnect · TLS · multi-topic |
+| Crypto | AES-128-CTR · multi-PSK |
+| Protocol | TEXT · NODEINFO · POSITION · TELEMETRY |
+| RF metrics | SNR, RSSI, hop_start |
+| UI | Dark tactical theme · 4 views · live stats |
+| Map | Leaflet (folium) dark tiles + MarkerCluster |
+| Export | CSV nodes / messages / positions |
+| UX | Search, clipboard, logs, shortcuts |
 
 ---
 
-## Project Layout
-
-```
-Xmesh-expert/
-├── core/
-│   ├── mqtt_client.py      # MQTT client + reconnect + TLS
-│   ├── protobuf_decoder.py # AES-CTR + ServiceEnvelope / MeshPacket decode
-│   └── signals.py          # Qt signal bus
-├── models/
-│   └── node.py             # Dataclass Node model
-├── ui/
-│   ├── main_window.py      # Main window + stats + navigation
-│   ├── styles/theme.qss    # High-contrast tactical theme
-│   └── widgets/
-│       ├── chat.py         # Live chat + send
-│       ├── node_list.py    # Node DB table
-│       └── map_view.py     # Position telemetry table
-├── config.yaml             # Broker + channel key
-├── main.py                 # Entry point
-├── requirements.txt
-├── pyproject.toml
-├── LICENSE
-└── README.md
-```
-
----
-
-## Requirements
-
-- **Python 3.10+** (3.12 recommended)
-- OS: Linux / Windows / macOS
-
----
-
-## Installation
+## Install
 
 ```bash
-# 1. Extract / clone
 cd Xmesh-expert
-
-# 2. (Optional but recommended) create a virtual environment
 python -m venv .venv
-source .venv/bin/activate          # Linux / macOS
-# .venv\Scripts\activate           # Windows
-
-# 3. Install dependencies
+source .venv/bin/activate          # Windows: .venv\Scripts\activate
 pip install -r requirements.txt
-```
-
----
-
-## Configuration
-
-Edit `config.yaml`:
-
-```yaml
-mqtt:
-  broker: "mqtt.meshtastic.org"
-  port: 1883                  # 8883 for TLS
-  username: "meshdev"
-  password: "large4cats"
-  use_tls: false
-  topic: "msh/+/2/c/LongFast/#"
-
-mesh:
-  channel_key_base64: "AQ=="  # Default public LongFast key
-```
-
-> **Private channel** – replace `channel_key_base64` with your 16-byte PSK encoded in Base64.
-
----
-
-## Launch
-
-Always run from the project root so that relative paths resolve correctly:
-
-```bash
 python main.py
 ```
 
 ---
 
-## Operational Notes
+## Config (`config.yaml`)
 
-- **Node DB** – Every packet that carries a node identity populates or refreshes the table (short name, long name, hardware model, last-seen timestamp).
-- **Live Chat** – Incoming `TEXT_MESSAGE_APP` packets appear with timestamps. Type a message and press **Enter** or click **SEND** to encrypt and publish a broadcast.
-- **Telemetry** – `POSITION_APP` packets feed the position table (lat / lon / altitude). The data model is ready for a future map widget (folium, pyqt-leaflet, etc.).
-- **Connection status** – The top-right card and the status bar reflect online / offline state in real time.
-- **TLS** – Set `use_tls: true` and `port: 8883` for encrypted transport to the public broker or your own Mosquitto instance.
+```yaml
+mqtt:
+  broker: "mqtt.meshtastic.org"
+  port: 1883
+  username: "meshdev"
+  password: "large4cats"
+  use_tls: false
+  topics:
+    - "msh/+/2/c/LongFast/#"
 
----
-
-## Technical Stack
-
-| Layer | Technology |
-|-------|------------|
-| Language | Python 3.10+ |
-| GUI | PySide6 (Qt 6) |
-| MQTT | paho-mqtt |
-| Crypto | cryptography (AES-128-CTR) |
-| Serialization | meshtastic protobufs (`mesh_pb2`, `mqtt_pb2`, `portnums_pb2`) |
-| Config | PyYAML |
+mesh:
+  channel_key_base64: "AQ=="
+  # extra_keys_base64:
+  #   - "AnotherKeyBase64=="
+```
 
 ---
 
-## Security Notes
+## Shortcuts
 
-- The default key `"AQ=="` is the **public** Meshtastic LongFast channel. Anyone can decrypt traffic on that channel.
-- For private deployments generate a random 16-byte key, Base64-encode it, and distribute it only to authorised nodes.
-- Credentials in `config.yaml` should never be committed to public repositories when using private brokers.
+| Shortcut | Action |
+|----------|--------|
+| `Ctrl+E` | Export nodes CSV |
+| `Ctrl+M` | Export messages CSV |
+| `Ctrl+Shift+M` | Open interactive map |
+| `Ctrl+L` | Jump to Logs tab |
+
+Right-click a row in **Node DB** to copy ID or coordinates.
 
 ---
 
 ## License
 
-MIT License – see [LICENSE](LICENSE).
-
----
-
-## Changelog (v2.1.0 – Expert Edition)
-
-- Unified and corrected AES-CTR key handling (official default key)
-- Full TLS support + robust reconnect / status signals
-- Professional sidebar navigation (QListWidget)
-- Live connection / node / message counters
-- Timestamps and colour coding in chat
-- Proper Node dataclass with last-seen tracking
-- Position telemetry table (map-ready)
-- Type hints, docstrings, structured logging throughout
-- `pyproject.toml`, `.gitignore`, MIT license
-- Cleaner configuration and README
+MIT
