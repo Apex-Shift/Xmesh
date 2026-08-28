@@ -5,6 +5,9 @@
 XMESH is a high-performance desktop client that connects to any Meshtastic MQTT broker, decrypts live mesh traffic, maintains a real-time node database, displays chat and GPS telemetry, and lets you broadcast text messages back onto the network.
 
 ---
+[![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
+[![PySide6](https://img.shields.io/badge/GUI-PySide6-orange.svg)](https://wiki.qt.io/Qt_for_Python)
 
 ## Features
 
